@@ -5,8 +5,11 @@
 package it.polito.tdp.crimes;
 
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 
+import it.polito.tdp.crimes.model.Adiacente;
+import it.polito.tdp.crimes.model.Distretto;
 import it.polito.tdp.crimes.model.Model;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -25,7 +28,7 @@ public class FXMLController {
     private URL location;
 
     @FXML // fx:id="boxAnno"
-    private ComboBox<?> boxAnno; // Value injected by FXMLLoader
+    private ComboBox<Integer> boxAnno; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxMese"
     private ComboBox<?> boxMese; // Value injected by FXMLLoader
@@ -47,7 +50,27 @@ public class FXMLController {
 
     @FXML
     void doCreaReteCittadina(ActionEvent event) {
-
+    	txtResult.clear();
+    	
+    	Integer anno = boxAnno.getValue();
+    	if (anno == null) {
+    		txtResult.appendText("Per favore selezionare un anno dalla tendina!\n");
+    		return;
+    	}
+    	
+    	this.model.creaGrafo(anno);
+    	txtResult.appendText("Grafo creato!\n");
+    	txtResult.appendText("# Vertici : " + this.model.getNumVertici() +"\n");
+    	txtResult.appendText("# Archi : " + this.model.getNumArchi() +"\n");
+    	
+    	List<Distretto> distretti = this.model.getAllVertici();
+    	for (Distretto d : distretti) {
+    		List<Adiacente> adiacenti = this.model.getAllAdiacenti(d);
+    		txtResult.appendText("I distretti adiacenti a '" + d + "' sono: \n");
+    		for (Adiacente a : adiacenti) {
+    			txtResult.appendText(a + "\n");
+    		}
+    	}
     }
 
     @FXML
@@ -65,6 +88,10 @@ public class FXMLController {
         assert txtN != null : "fx:id=\"txtN\" was not injected: check your FXML file 'Scene.fxml'.";
         assert txtResult != null : "fx:id=\"txtResult\" was not injected: check your FXML file 'Scene.fxml'.";
 
+        for (int anno = 2014; anno <= 2017; anno++) {
+        	boxAnno.getItems().add(anno);
+        }
+        	
     }
     
     public void setModel(Model model) {
