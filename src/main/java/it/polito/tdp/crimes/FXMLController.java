@@ -5,6 +5,8 @@
 package it.polito.tdp.crimes;
 
 import java.net.URL;
+import java.time.DateTimeException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.ResourceBundle;
 
@@ -31,10 +33,10 @@ public class FXMLController {
     private ComboBox<Integer> boxAnno; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxMese"
-    private ComboBox<?> boxMese; // Value injected by FXMLLoader
+    private ComboBox<Integer> boxMese; // Value injected by FXMLLoader
 
     @FXML // fx:id="boxGiorno"
-    private ComboBox<?> boxGiorno; // Value injected by FXMLLoader
+    private ComboBox<Integer> boxGiorno; // Value injected by FXMLLoader
 
     @FXML // fx:id="btnCreaReteCittadina"
     private Button btnCreaReteCittadina; // Value injected by FXMLLoader
@@ -66,7 +68,7 @@ public class FXMLController {
     	List<Distretto> distretti = this.model.getAllVertici();
     	for (Distretto d : distretti) {
     		List<Adiacente> adiacenti = this.model.getAllAdiacenti(d);
-    		txtResult.appendText("I distretti adiacenti a '" + d + "' sono: \n");
+    		txtResult.appendText("I distretti adiacenti a '" + d.getDistrettoId() + "' sono: \n");
     		for (Adiacente a : adiacenti) {
     			txtResult.appendText(a + "\n");
     		}
@@ -75,7 +77,40 @@ public class FXMLController {
 
     @FXML
     void doSimula(ActionEvent event) {
-
+    	
+    	this.txtResult.clear();
+    	Integer anno, mese, giorno, N;
+    	
+    	try {
+    		N = Integer.parseInt(txtN.getText());
+    	} catch (NumberFormatException e) {
+    		txtResult.appendText("Formato N non corretto\n");
+    		return;
+    	}
+    	
+    	if(N < 1 || N > 10) {
+    		txtResult.appendText("N deve essere compreso tra 1 e 10\n");
+    		return;
+    	}
+    	
+    	anno = boxAnno.getValue();
+    	mese = boxMese.getValue();
+    	giorno = boxGiorno.getValue();
+    	
+    	if(anno == null || mese == null || giorno == null) {
+    		txtResult.appendText("Seleziona tutti i campi!\n");
+    		return;
+    	}
+    	
+    	try {
+    		LocalDate.of(anno, mese, giorno);
+    	} catch (DateTimeException e) {
+    		txtResult.appendText("Data non corretta\n");
+    	}
+    	
+    	txtResult.appendText("Simulo con " + N + " agenti");
+    	txtResult.appendText("\nCRIMINI MAL GESTITI: " + this.model.simula(anno, mese, giorno, N));
+    	
     }
 
     @FXML // This method is called by the FXMLLoader when initialization is complete
@@ -90,6 +125,14 @@ public class FXMLController {
 
         for (int anno = 2014; anno <= 2017; anno++) {
         	boxAnno.getItems().add(anno);
+        }
+        
+        for (int mese = 1; mese <= 12; mese++) {
+        	boxMese.getItems().add(mese);
+        }
+        
+        for (int giorno = 1; giorno <= 31; giorno++) {
+        	boxGiorno.getItems().add(giorno);
         }
         	
     }

@@ -1,8 +1,10 @@
 package it.polito.tdp.crimes.model;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.jgrapht.Graph;
 import org.jgrapht.Graphs;
@@ -18,16 +20,18 @@ public class Model {
 	
 	private EventsDao dao;
 	private Graph<Distretto, DefaultWeightedEdge> grafo;
+	private Map<Integer, Distretto> idMap;
 	
 	public Model() {
 		dao = new EventsDao();
+		idMap = new HashMap<>();
 	}
 	
 	public void creaGrafo(int anno) {
 		grafo = new SimpleWeightedGraph<>(DefaultWeightedEdge.class);
 		
 		// Aggiunta dei vertici
-		Graphs.addAllVertices(this.grafo, dao.getAllDistretti(anno));
+		Graphs.addAllVertices(this.grafo, dao.getAllDistretti(anno, idMap));
 	
 		// Aggiunta degli archi
 		for (Distretto d1 : this.grafo.vertexSet()) {
@@ -37,6 +41,12 @@ public class Model {
 				}
 			}
 		}
+	}
+	
+	public int simula(Integer anno, Integer mese, Integer giorno, Integer N) {
+		Simulatore sim = new Simulatore();
+		sim.init(N, anno, mese, giorno, grafo);
+		return sim.run();
 	}
 	
 	public List<Distretto> getAllVertici(){
