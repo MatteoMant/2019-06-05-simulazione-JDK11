@@ -175,7 +175,7 @@ public class EventsDao {
 			
 			Distretto d = null;
 			
-			int minimo = 100000;
+			int minimo = Integer.MAX_VALUE;
 			
 			while(res.next()) {
 				try {

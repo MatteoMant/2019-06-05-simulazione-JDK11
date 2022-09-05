@@ -84,40 +84,47 @@ public class Simulatore {
 					System.out.println("NUOVO CRIMINE! " + e.getCrimine().getIncident_id());
 					//cerco l'agente libero più vicino
 					Integer partenza = null;
-					partenza = cercaAgente(e.getCrimine().getDistrict_id());
-					if(partenza != null) {
-						//c'è un agente libero in partenza
-						//setto l'agente come occupato
-						this.agenti.put(partenza, this.agenti.get(partenza) - 1);
-						//cerco di capire quanto ci metterà l'agente libero ad arrivare sul posto
+					partenza = cercaDistretto(e.getCrimine().getDistrict_id()); // vado alla ricerca del distretto più vicino in cui vi sono agenti liberi
+					if(partenza != null) {  // in questo caso ho trovato il distretto più vicino a quello in cui si è verificato il crimine con degli agenti liberi in tale distretto
+						//c'è un agente libero in 'partenza' (ci sarà almeno un agente disponibile nel distretto appena trovato, non mi interessa quale agente)
+						this.agenti.put(partenza, this.agenti.get(partenza) - 1); // il numero di agenti in tale distretto diminuisce di uno
+						//cerco di capire quanto ci metterà l'agente libero ad arrivare sul posto dal distretto in cui si trova
 						Double distanza;
 						if(partenza.equals(e.getCrimine().getDistrict_id()))
-							distanza = 0.0;
+							distanza = 0.0; // l'agente si trovava già nel distretto in cui si è verificato il crimine
 						else
 							distanza = this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(partenza), idMap.get(e.getCrimine().getDistrict_id())));
 						
-						Long seconds = (long) ((distanza * 1000)/(60/3.6));
-						this.queue.add(new Evento(EventType.ARRIVA_AGENTE, e.getData().plusSeconds(seconds), e.getCrimine()));
+						Long seconds = (long) ((distanza * 1000)/(60/3.6)); // tempo di percorrenza per arrivare sul luogo
 						
+						// se si verifica un evento di tipo 'CRIMINE' allora dobbiamo generare un evento di tipo 'ARRIVA_AGENTE'
+						this.queue.add(new Evento(EventType.ARRIVA_AGENTE, e.getData().plusSeconds(seconds), e.getCrimine()));  
+						// la data dell'evento 'ARRIVA_AGENTE' è uguale alla data dell'evento 'CRIMINE' più il tempo di percorrenza
 					} else {
-						//non c'è nessun agente libero al momento -> crimine mal gestito
+						// NON c'è nessun agente libero al momento -> crimine mal gestito
 						System.out.println("CRIMINE " + e.getCrimine().getIncident_id() + " MAL GESTITO!");
 						this.malGestiti ++;
 					}
 					break;
 				case ARRIVA_AGENTE:
 					System.out.println("ARRIVA AGENTE PER CRIMINE! " + e.getCrimine().getIncident_id());
-					Long duration = getDurata(e.getCrimine().getOffense_category_id());
+					Long duration = getDurata(e.getCrimine().getOffense_category_id()); // quanto ci vuole a gestire il suddetto crimine
+
+					// se l'evento è di tipo 'ARRIVA_AGENTE' significa che il crimine verrà gestito e quindi creiamo un nuovo evento di tipo 'GESTITO'
 					this.queue.add(new Evento(EventType.GESTITO, e.getData().plusSeconds(duration), e.getCrimine()));
+					// la data di questo nuovo evento è pari alla data di arrivo dell'agente più quanto tempo ci vuole per gestire tale crimine
+					
 					// controllare se il crimine è mal gestito
-					if(e.getData().isAfter(e.getCrimine().getReported_date().plusMinutes(15))) {
+					// se la data di arrivo dell'agente è successiva alla data del crimine maggiorata di 15 minuti allora avrò un crimine mal gestito
+					if (e.getData().isAfter(e.getCrimine().getReported_date().plusMinutes(15))) {
 						System.out.println("CRIMINE " + e.getCrimine().getIncident_id() + " MAL GESTITO!");
 						this.malGestiti ++;
 					}
 					break;
 				case GESTITO:
 					System.out.println("CRIMINE " + e.getCrimine().getIncident_id() + " GESTITO");
-					this.agenti.put(e.getCrimine().getDistrict_id(), this.agenti.get(e.getCrimine().getDistrict_id())+1);
+					this.agenti.put(e.getCrimine().getDistrict_id(), this.agenti.get(e.getCrimine().getDistrict_id())+1); 
+					// l'agente che ha gestito il crimine rimane sul posto e risulta disponibile ad occuparsi di un nuovo evento
 					break;
 			}
 		}
@@ -129,24 +136,24 @@ public class Simulatore {
 		if(offense_category_id.equals("all_other_crimes")) {
 			Random r = new Random();
 			if(r.nextDouble() > 0.5)
-				return Long.valueOf(2*60*60);
+				return Long.valueOf(2*60*60); // 2 ore (espresse in secondi)
 			else
-				return Long.valueOf(1*60*60);
+				return Long.valueOf(1*60*60); // 1 ora (espressa in secondi)
 		} else {
 			return Long.valueOf(2*60*60);
 		}
 	}
 
-	private Integer cercaAgente(Integer district_id) {
+	private Integer cercaDistretto(Integer district_id) {
 		Double distanza = Double.MAX_VALUE;
 		Integer distretto = null;
 		
 		for(Integer d : this.agenti.keySet()) {
-			if(this.agenti.get(d) > 0) {
-				if(district_id.equals(d)) {
-					distanza = 0.0;
-					distretto = d; 
-				} else if(this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d))) < distanza) {
+			if(this.agenti.get(d) > 0) {  // se il numero di agenti disponibili in quel distretto è maggiore di 0 
+				if(district_id.equals(d)) { // in questo caso vorrà dire che ci sono agenti liberi nel distretto in cui si è verificato il crimine
+					distanza = 0.0; // chiaramente la distanza è nulla in quanto l'agente si trova già nel posto
+					distretto = d; // il distretto più vicino è proprio lo stesso distretto in cui si è verificato il crimine
+				} else if(this.grafo.getEdge(idMap.get(district_id), idMap.get(d)) != null && this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d))) < distanza) {
 					distanza = this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d)));
 					distretto = d;
 				}
