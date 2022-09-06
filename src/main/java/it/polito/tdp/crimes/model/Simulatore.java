@@ -28,10 +28,10 @@ public class Simulatore {
 	// 3.1 "Libero" l'agente, che torna a essere disponibile
 	
 	// Parametri della simulazione
-	private Integer N;
-	private Integer anno;
-	private Integer mese;
-	private Integer giorno;
+//	private Integer N;
+//	private Integer anno;
+//	private Integer mese;
+//	private Integer giorno;
 	
 	// modello del mondo
 	private Graph<Distretto, DefaultWeightedEdge> grafo;
@@ -46,10 +46,10 @@ public class Simulatore {
 	
 	public void init(Integer N, Integer anno, Integer mese, Integer giorno,
 			Graph<Distretto, DefaultWeightedEdge> grafo) {
-		this.N = N;
-		this.anno = anno;
-		this.mese = mese;
-		this.giorno = giorno;
+//		this.N = N;
+//		this.anno = anno;
+//		this.mese = mese;
+//		this.giorno = giorno;
 		this.grafo = grafo;
 		
 		this.malGestiti = 0;
@@ -70,6 +70,7 @@ public class Simulatore {
 		// creo e inizializzo la coda
 		this.queue = new PriorityQueue<Evento>();
 		
+		// tutti gli eventi di un dato giorno devono essere gestiti (o almeno bisogna provarci)
 		for(Event e : dao.listAllEventsByDate(anno, mese, giorno)) {
 			queue.add(new Evento(EventType.CRIMINE, e.getReported_date(), e));
 		}
@@ -83,17 +84,17 @@ public class Simulatore {
 				case CRIMINE:
 					System.out.println("NUOVO CRIMINE! " + e.getCrimine().getIncident_id());
 					//cerco l'agente libero più vicino
-					Integer partenza = null;
-					partenza = cercaDistretto(e.getCrimine().getDistrict_id()); // vado alla ricerca del distretto più vicino in cui vi sono agenti liberi
-					if(partenza != null) {  // in questo caso ho trovato il distretto più vicino a quello in cui si è verificato il crimine con degli agenti liberi in tale distretto
-						//c'è un agente libero in 'partenza' (ci sarà almeno un agente disponibile nel distretto appena trovato, non mi interessa quale agente)
-						this.agenti.put(partenza, this.agenti.get(partenza) - 1); // il numero di agenti in tale distretto diminuisce di uno
-						//cerco di capire quanto ci metterà l'agente libero ad arrivare sul posto dal distretto in cui si trova
+					Integer distretto = null;
+					distretto = cercaDistrettoPiuVicino(e.getCrimine().getDistrict_id()); // vado alla ricerca del distretto più vicino in cui vi sono agenti liberi
+					if(distretto != null) {  // in questo caso ho trovato il distretto più vicino a quello in cui si è verificato il crimine con degli agenti liberi in tale distretto
+						// ci sarà almeno un agente disponibile nel distretto appena trovato (non mi interessa quale agente)
+						this.agenti.put(distretto, this.agenti.get(distretto) - 1); // il numero di agenti in tale distretto diminuisce di uno
+						// cerco di capire quanto ci metterà l'agente libero ad arrivare sul posto dal distretto in cui si trova
 						Double distanza;
-						if(partenza.equals(e.getCrimine().getDistrict_id()))
+						if(distretto.equals(e.getCrimine().getDistrict_id()))
 							distanza = 0.0; // l'agente si trovava già nel distretto in cui si è verificato il crimine
 						else
-							distanza = this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(partenza), idMap.get(e.getCrimine().getDistrict_id())));
+							distanza = this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(distretto), idMap.get(e.getCrimine().getDistrict_id())));
 						
 						Long seconds = (long) ((distanza * 1000)/(60/3.6)); // tempo di percorrenza per arrivare sul luogo
 						
@@ -144,7 +145,7 @@ public class Simulatore {
 		}
 	}
 
-	private Integer cercaDistretto(Integer district_id) {
+	private Integer cercaDistrettoPiuVicino(Integer district_id) {
 		Double distanza = Double.MAX_VALUE;
 		Integer distretto = null;
 		
@@ -153,12 +154,12 @@ public class Simulatore {
 				if(district_id.equals(d)) { // in questo caso vorrà dire che ci sono agenti liberi nel distretto in cui si è verificato il crimine
 					distanza = 0.0; // chiaramente la distanza è nulla in quanto l'agente si trova già nel posto
 					distretto = d; // il distretto più vicino è proprio lo stesso distretto in cui si è verificato il crimine
-				} else if(this.grafo.getEdge(idMap.get(district_id), idMap.get(d)) != null && this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d))) < distanza) {
+				} else if (this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d))) < distanza) {
 					distanza = this.grafo.getEdgeWeight(this.grafo.getEdge(idMap.get(district_id), idMap.get(d)));
 					distretto = d;
 				}
 			}
-		}
+		} 
 		return distretto;
 	}
 	

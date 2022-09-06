@@ -66,7 +66,6 @@ public class Model {
 		return result;
 	}
 	
-	
 	public int getNumVertici() {
 		return this.grafo.vertexSet().size();
 	}
